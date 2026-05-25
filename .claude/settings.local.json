@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 *)",
+      "Bash(python -c \"print\\('hello'\\)\")",
+      "Bash(python *)",
+      "WebSearch",
+      "Bash(cp /tmp/dot_skill_li-daoyuan_meta.json /tmp/dot_skill_li-daoyuan_work.md /tmp/dot_skill_li-daoyuan_persona.md \"C:/Users/Hao/AppData/Local/Temp/\")",
+      "Read(//c/Users/Hao/AppData/Local/Temp/**)",
+      "Bash(cygpath -w /tmp)",
+      "Bash(npx create-next-app@latest site --typescript --tailwind --app --src-dir --import-alias \"@/*\" --no-git --eslint)",
+      "Bash(mkdir -p _tmp_site)",
+      "Bash(cp site/ARCHITECTURE.md site/DESIGN.md site/system-prompt.txt _tmp_site/)",
+      "Bash(rm -rf site)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"console.log\\(require.resolve\\('ai/package.json'\\)\\)\")",
+      "Bash(node -e \"const p = require\\('D:/Agent Project/Web郦道元/site/node_modules/ai/package.json'\\); console.log\\(JSON.stringify\\(p.exports, null, 2\\)\\)\")",
+      "Bash(node *)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s http://localhost:3000/api/chat -X POST -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"你好，你是谁？\"}]}')",
+      "Bash(curl -s -N http://localhost:3000/api/chat -X POST -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"你好，请用一句话介绍自己\"}]}')",
+      "Bash(timeout 15 curl -s http://localhost:3000/api/chat -X POST -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"你好\"}]}')",
+      "Bash(curl *)"
+    ]
+  }
+}

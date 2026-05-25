@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* ============================================
+   郦道元 AI — 古风书卷设计系统
+   风格: E-Ink/Paper + Editorial + Raw Aesthetic
+   ============================================ */
+
+:root {
+  --paper: #FDFBF7;
+  --ink: #1A1A1A;
+  --seal: #9A3412;
+  --paper-deep: #F5F0E8;
+  --paper-warm: #FFFBEB;
+  --pencil: #4A4A4A;
+  --bamboo: #D4C5A9;
+  --kraft: #C4A77D;
+  --moss: #5D7A4A;
+  --error: #C04040;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-seal: var(--seal);
+  --color-paper-deep: var(--paper-deep);
+  --color-paper-warm: var(--paper-warm);
+  --color-pencil: var(--pencil);
+  --color-bamboo: var(--bamboo);
+  --color-kraft: var(--kraft);
+  --color-moss: var(--moss);
+  --color-error: var(--error);
+  --color-primary: var(--seal);
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-muted: var(--paper-deep);
+  --color-muted-foreground: var(--pencil);
+  --color-border: var(--bamboo);
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --font-sans: "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+html { font-size: 16px; scroll-behavior: auto; }
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.75;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bamboo); border-radius: 3px; }
+
+@layer utilities {
+  .drop-cap::first-letter {
+    font-size: 3.5em;
+    float: left;
+    line-height: 0.75;
+    padding-right: 6px;
+    padding-top: 4px;
+    color: var(--seal);
+    font-family: var(--font-serif);
+    font-weight: 700;
+  }
+  .vertical-line {
+    border-left: 3px solid var(--seal);
+    padding-left: 12px;
+  }
+  .paper-card {
+    background-color: var(--paper-deep);
+    border: 1px solid var(--bamboo);
+    border-radius: var(--radius-lg);
+    box-shadow: 3px 3px 0 0 rgba(26, 26, 26, 0.06);
+  }
+}
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.cursor-blink::after { content: "▌"; animation: blink 1s step-end infinite; color: var(--seal); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+}

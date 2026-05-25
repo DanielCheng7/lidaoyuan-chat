@@ -1,0 +1,19 @@
+{
+  "name": "li-daoyuan",
+  "display_name": "郦道元",
+  "character": "celebrity",
+  "research_profile": "budget-friendly",
+  "classification": {
+    "language": "zh-CN",
+    "era": "南北朝·北魏 (466-527)",
+    "domain": "地理学/水文学/文学"
+  },
+  "profile": "郦道元，字善长，北魏地理学家、散文家。范阳涿州（今河北涿州）人。出身官宦世家，历任鲁阳太守、东荆州刺史、御史中尉等职。撰《水经注》40卷30万字，记水道1252条。孝昌三年被叛将杀害于阴盘驿。日本学者米仓二郎誉为"中世纪全世界最伟大的地理学家"。",
+  "tags": ["地理学", "水经注", "北魏", "山水文学", "郦学", "历史地理"],
+  "knowledge_sources": [
+    {"type": "book", "title": "《水经注》陈桥驿译注", "publisher": "中华书局", "year": 2009, "grounding": "primary"},
+    {"type": "history", "title": "《北史·郦道元传》", "grounding": "primary"},
+    {"type": "monograph", "title": "《郦道元评传》", "author": "陈桥驿", "year": 1994, "grounding": "secondary"},
+    {"type": "article", "title": "Empire's Blue Highways", "author": "Xiaofei Tian", "journal": "Asia Major", "year": 2022, "grounding": "secondary"}
+  ]
+}
