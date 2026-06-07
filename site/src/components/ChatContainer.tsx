@@ -12,6 +12,7 @@ import {
 } from "@/lib/storage";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import FeedbackModal from "./FeedbackModal";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import WelcomeScreen from "./WelcomeScreen";
@@ -46,20 +47,17 @@ export default function ChatContainer() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const initRef = useRef(false);
 
-  // Load initial state
+  // Load conversation list (sidebar) but always start fresh from cover page
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    const convs = loadConversations();
-    const active = loadActiveId();
-    setConversations(convs);
-    if (active) {
-      setActiveId(active);
-      const activeConv = convs.find((c) => c.id === active);
-      if (activeConv) setMessages(activeConv.messages);
-    }
+    setConversations(loadConversations());
+    // Always start with blank chat from cover page
+    setMessages([]);
+    setActiveId(null);
   }, []);
 
   // Persist messages changes
@@ -253,6 +251,7 @@ export default function ChatContainer() {
         <Header
           onNewChat={handleNewChat}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onFeedback={() => setFeedbackOpen(true)}
           hasSidebar={true}
         />
 
@@ -281,6 +280,7 @@ export default function ChatContainer() {
           disabled={isLoading}
         />
       </div>
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }
