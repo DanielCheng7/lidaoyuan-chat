@@ -24,7 +24,20 @@
       "Bash(curl -s http://localhost:3000/api/chat -X POST -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"你好，你是谁？\"}]}')",
       "Bash(curl -s -N http://localhost:3000/api/chat -X POST -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"你好，请用一句话介绍自己\"}]}')",
       "Bash(timeout 15 curl -s http://localhost:3000/api/chat -X POST -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"你好\"}]}')",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npx vercel *)",
+      "Bash(vercel whoami *)",
+      "Bash(vercel --prod --env DEEPSEEK_API_KEY=sk-0a07505884744525a882715572800a4b)",
+      "Bash(vercel login *)",
+      "Bash(vercel ls *)",
+      "Bash(npx @cloudflare/next-on-pages)",
+      "Bash(gh auth *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
