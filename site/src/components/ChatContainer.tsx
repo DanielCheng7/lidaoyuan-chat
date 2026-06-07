@@ -49,6 +49,7 @@ export default function ChatContainer() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const initRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Load conversation list (sidebar) but always start fresh from cover page
   useEffect(() => {
@@ -77,11 +78,14 @@ export default function ChatContainer() {
 
   const streamChat = useCallback(
     async (apiMessages: Array<{ role: string; content: string }>, assistantId: string) => {
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: apiMessages }),
+          signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -113,15 +117,61 @@ export default function ChatContainer() {
           }
         }
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "未知错误";
-        setError(msg);
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        if (e instanceof DOMException && e.name === "AbortError") {
+          // User stopped — keep partial content, don't show error
+        } else {
+          const msg = e instanceof Error ? e.message : "未知错误";
+          setError(msg);
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        }
       } finally {
+        abortRef.current = null;
         setIsLoading(false);
       }
     },
     []
   );
+
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  const handleRegenerate = useCallback(() => {
+    // Remove last AI message and re-send last user message
+    const cleanMessages = [...messages];
+    // Find last user message
+    const lastUserIdx = [...cleanMessages].reverse().findIndex((m) => m.role === "user");
+    if (lastUserIdx < 0) return;
+    const realIdx = cleanMessages.length - 1 - lastUserIdx;
+    const lastUser = cleanMessages[realIdx];
+    // Remove everything after the last user message
+    const trimmed = cleanMessages.slice(0, realIdx + 1);
+    setMessages(trimmed);
+
+    // Re-send
+    const userMsg: ChatMessage = {
+      id: generateId(),
+      role: "user",
+      content: lastUser.content,
+      timestamp: Date.now(),
+    };
+    const assistantMsg: ChatMessage = {
+      id: generateId(),
+      role: "assistant",
+      content: "",
+      timestamp: Date.now(),
+    };
+
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    setIsLoading(true);
+
+    const updatedMessages = [...trimmed, userMsg, assistantMsg];
+    const apiMessages = updatedMessages
+      .filter((m) => m.role === "user" || (m.role === "assistant" && m.content))
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    streamChat(apiMessages, assistantMsg.id);
+  }, [messages, streamChat]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -220,17 +270,8 @@ export default function ChatContainer() {
 
   const handleRetry = useCallback(() => {
     setError(null);
-    // Re-send last user message
-    const lastUser = [...messages].reverse().find((m) => m.role === "user");
-    if (lastUser) {
-      // Remove failed assistant message
-      const cleanMessages = messages.filter(
-        (m) => m.role !== "assistant" || m.content
-      );
-      setMessages(cleanMessages);
-      sendMessage(lastUser.content);
-    }
-  }, [messages, sendMessage]);
+    handleRegenerate();
+  }, [handleRegenerate]);
 
   const showWelcome = messages.length === 0 && !isLoading;
   const showMessages = messages.length > 0;
@@ -261,7 +302,11 @@ export default function ChatContainer() {
               <WelcomeScreen onExampleClick={handleExampleClick} />
             </div>
           ) : showMessages ? (
-            <MessageList messages={messages} isLoading={isLoading} />
+            <MessageList
+              messages={messages}
+              isLoading={isLoading}
+              onRegenerate={handleRegenerate}
+            />
           ) : null}
         </div>
 
@@ -278,6 +323,8 @@ export default function ChatContainer() {
           onChange={setInput}
           onSubmit={handleSubmit}
           disabled={isLoading}
+          isLoading={isLoading}
+          onStop={handleStop}
         />
       </div>
       <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />

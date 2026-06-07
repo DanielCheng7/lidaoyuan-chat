@@ -7,9 +7,11 @@ interface MessageInputProps {
   onChange: (value: string) => void;
   onSubmit: () => void;
   disabled: boolean;
+  isLoading?: boolean;
+  onStop?: () => void;
 }
 
-export default function MessageInput({ value, onChange, onSubmit, disabled }: MessageInputProps) {
+export default function MessageInput({ value, onChange, onSubmit, disabled, isLoading, onStop }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
@@ -54,19 +56,25 @@ export default function MessageInput({ value, onChange, onSubmit, disabled }: Me
                        disabled:bg-paper-deep disabled:border-transparent
                        min-h-[44px] max-h-[144px]"
           />
-          <button
-            onClick={onSubmit}
-            disabled={disabled || !value.trim()}
-            className="shrink-0 h-11 px-5 rounded-lg bg-seal text-white font-medium text-sm
-                       hover:bg-[#7A2A0E] disabled:opacity-40 disabled:cursor-not-allowed
-                       cursor-pointer transition-colors min-w-[44px] flex items-center justify-center"
-          >
-            {disabled ? (
-              <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              "发送"
-            )}
-          </button>
+          {isLoading ? (
+            <button
+              onClick={onStop}
+              className="shrink-0 h-11 px-5 rounded-lg bg-error text-white font-medium text-sm
+                         hover:bg-error/90 cursor-pointer transition-colors min-w-[44px] flex items-center justify-center"
+            >
+              停止
+            </button>
+          ) : (
+            <button
+              onClick={onSubmit}
+              disabled={disabled || !value.trim()}
+              className="shrink-0 h-11 px-5 rounded-lg bg-seal text-white font-medium text-sm
+                         hover:bg-[#7A2A0E] disabled:opacity-40 disabled:cursor-not-allowed
+                         cursor-pointer transition-colors min-w-[44px] flex items-center justify-center"
+            >
+              发送
+            </button>
+          )}
         </div>
         <p className="text-xs text-pencil/50 mt-2 text-center">
           Enter 发送 · Shift+Enter 换行

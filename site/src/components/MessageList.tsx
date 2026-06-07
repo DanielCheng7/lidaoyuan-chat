@@ -7,9 +7,10 @@ import MessageBubble from "./MessageBubble";
 interface MessageListProps {
   messages: ChatMessage[];
   isLoading: boolean;
+  onRegenerate?: () => void;
 }
 
-export default function MessageList({ messages, isLoading }: MessageListProps) {
+export default function MessageList({ messages, isLoading, onRegenerate }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [userScrolledUp, setUserScrolledUp] = useState(false);
@@ -32,12 +33,15 @@ export default function MessageList({ messages, isLoading }: MessageListProps) {
     }
   }, [messages, userScrolledUp, scrollToBottom]);
 
-  // Scroll to bottom when loading starts (new message sent)
   useEffect(() => {
     if (isLoading) {
       scrollToBottom();
     }
   }, [isLoading, scrollToBottom]);
+
+  // Find the last AI message index for regenerate
+  const lastAiIndex = [...messages].reverse().findIndex((m) => m.role === "assistant");
+  const lastAiIdx = lastAiIndex >= 0 ? messages.length - 1 - lastAiIndex : -1;
 
   return (
     <div className="relative flex-1">
@@ -46,8 +50,18 @@ export default function MessageList({ messages, isLoading }: MessageListProps) {
         onScroll={handleScroll}
         className="absolute inset-0 overflow-y-auto px-4 py-6"
       >
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+        {messages.length === 0 && !isLoading && (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-sm text-pencil/40">开始你的第一个问题</p>
+          </div>
+        )}
+        {messages.map((msg, i) => (
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            isStreaming={isLoading && i === messages.length - 1 && msg.role === "assistant"}
+            onRegenerate={i === lastAiIdx && !isLoading ? onRegenerate : undefined}
+          />
         ))}
         <div ref={bottomRef} />
       </div>
