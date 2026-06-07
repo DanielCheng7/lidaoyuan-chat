@@ -16,4 +16,4 @@ export const FAMOUS_QUOTE =
 
 export const WELCOME_HINT = "向郦道元请教中国古代地理";
 
-export const STORAGE_KEY = "lidaoyuan-chat-messages";
+export const STORAGE_KEY = "lidaoyuan-chat-v2";

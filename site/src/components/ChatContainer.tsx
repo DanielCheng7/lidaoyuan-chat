@@ -1,9 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChatMessage } from "@/lib/types";
-import { saveMessages, loadMessages, clearMessages } from "@/lib/storage";
+import { ChatMessage, Conversation } from "@/lib/types";
+import {
+  loadConversations,
+  loadActiveId,
+  createConversation,
+  updateConversationMessages,
+  deleteConversation,
+  setActiveConversation,
+} from "@/lib/storage";
 import Header from "./Header";
+import Sidebar from "./Sidebar";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import WelcomeScreen from "./WelcomeScreen";
@@ -23,7 +31,7 @@ function parseSSEChunk(chunk: string): string {
         const content = json.choices?.[0]?.delta?.content;
         if (content) result += content;
       } catch {
-        // skip unparseable lines
+        // skip
       }
     }
   }
@@ -31,44 +39,51 @@ function parseSSEChunk(chunk: string): string {
 }
 
 export default function ChatContainer() {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const initRef = useRef(false);
-  const messagesRef = useRef<ChatMessage[]>([]);
 
-  // Keep ref in sync
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
-  // Load saved messages once
+  // Load initial state
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    const saved = loadMessages();
-    if (saved && saved.length > 0) {
-      setMessages(saved);
-      setShowWelcome(false);
+    const convs = loadConversations();
+    const active = loadActiveId();
+    setConversations(convs);
+    if (active) {
+      setActiveId(active);
+      const activeConv = convs.find((c) => c.id === active);
+      if (activeConv) setMessages(activeConv.messages);
     }
   }, []);
 
-  // Persist on change
+  // Persist messages changes
+  const persistRef = useRef(false);
   useEffect(() => {
-    if (messages.length > 0) {
-      saveMessages(messages);
+    if (!persistRef.current) {
+      persistRef.current = true;
+      return;
     }
-  }, [messages]);
+    if (!activeId) return;
+    const title =
+      messages.find((m) => m.role === "user")?.content.slice(0, 30) || "新对话";
+    updateConversationMessages(activeId, messages, title);
+    // Also refresh sidebar list
+    setConversations(loadConversations());
+  }, [messages, activeId]);
 
   const streamChat = useCallback(
-    async (allMessages: Array<{ role: string; content: string }>, assistantId: string) => {
+    async (apiMessages: Array<{ role: string; content: string }>, assistantId: string) => {
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: allMessages }),
+          body: JSON.stringify({ messages: apiMessages }),
         });
 
         if (!response.ok) {
@@ -110,19 +125,25 @@ export default function ChatContainer() {
     []
   );
 
-  const handleSubmit = useCallback(
-    (e?: React.FormEvent) => {
-      e?.preventDefault();
-      const text = input.trim();
-      if (!text || isLoading) return;
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || isLoading) return;
 
-      setShowWelcome(false);
       setError(null);
+
+      // Create conversation if needed
+      let convId = activeId;
+      if (!convId) {
+        const conv = createConversation(text);
+        convId = conv.id;
+        setActiveId(conv.id);
+        setConversations(loadConversations());
+      }
 
       const userMsg: ChatMessage = {
         id: generateId(),
         role: "user",
-        content: text,
+        content: text.trim(),
         timestamp: Date.now(),
       };
       const assistantMsg: ChatMessage = {
@@ -132,95 +153,134 @@ export default function ChatContainer() {
         timestamp: Date.now(),
       };
 
-      const updated = [...messagesRef.current, userMsg, assistantMsg];
-      setMessages(updated);
+      setMessages((prev) => [...prev, userMsg, assistantMsg]);
       setInput("");
       setIsLoading(true);
 
-      const apiMessages = updated
+      const updatedMessages = [...messages, userMsg, assistantMsg];
+      const apiMessages = updatedMessages
         .filter((m) => m.role === "user" || (m.role === "assistant" && m.content))
         .map((m) => ({ role: m.role, content: m.content }));
 
-      streamChat(apiMessages, assistantMsg.id);
+      await streamChat(apiMessages, assistantMsg.id);
     },
-    [input, isLoading, streamChat]
+    [activeId, isLoading, messages, streamChat]
+  );
+
+  const handleSubmit = useCallback(
+    (e?: React.FormEvent) => {
+      e?.preventDefault();
+      sendMessage(input);
+    },
+    [input, sendMessage]
   );
 
   const handleExampleClick = useCallback(
     (question: string) => {
-      if (isLoading) return;
-
-      setShowWelcome(false);
-      setError(null);
-
-      const userMsg: ChatMessage = {
-        id: generateId(),
-        role: "user",
-        content: question,
-        timestamp: Date.now(),
-      };
-      const assistantMsg: ChatMessage = {
-        id: generateId(),
-        role: "assistant",
-        content: "",
-        timestamp: Date.now(),
-      };
-
-      const updated = [...messagesRef.current, userMsg, assistantMsg];
-      setMessages(updated);
-      setInput("");
-      setIsLoading(true);
-
-      const apiMessages = updated
-        .filter((m) => m.role === "user" || (m.role === "assistant" && m.content))
-        .map((m) => ({ role: m.role, content: m.content }));
-
-      streamChat(apiMessages, assistantMsg.id);
+      sendMessage(question);
     },
-    [isLoading, streamChat]
+    [sendMessage]
   );
 
-  const handleNewChat = useCallback(() => {
-    if (messages.length === 0) return;
-    setMessages([]);
-    clearMessages();
-    setShowWelcome(true);
+  const handleSelectConversation = useCallback((id: string) => {
+    setActiveConversation(id);
+    setActiveId(id);
+    const convs = loadConversations();
+    setConversations(convs);
+    const conv = convs.find((c) => c.id === id);
+    setMessages(conv?.messages ?? []);
     setError(null);
-  }, [messages.length]);
+    setSidebarOpen(false);
+  }, []);
+
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setActiveId(null);
+    setError(null);
+    setSidebarOpen(false);
+  }, []);
+
+  const handleDeleteConversation = useCallback(
+    (id: string) => {
+      deleteConversation(id);
+      const convs = loadConversations();
+      setConversations(convs);
+      if (activeId === id) {
+        const next = convs[0];
+        if (next) {
+          setActiveId(next.id);
+          setMessages(next.messages);
+          setActiveConversation(next.id);
+        } else {
+          setActiveId(null);
+          setMessages([]);
+        }
+      }
+    },
+    [activeId]
+  );
 
   const handleRetry = useCallback(() => {
     setError(null);
-    handleSubmit();
-  }, [handleSubmit]);
+    // Re-send last user message
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (lastUser) {
+      // Remove failed assistant message
+      const cleanMessages = messages.filter(
+        (m) => m.role !== "assistant" || m.content
+      );
+      setMessages(cleanMessages);
+      sendMessage(lastUser.content);
+    }
+  }, [messages, sendMessage]);
+
+  const showWelcome = messages.length === 0 && !isLoading;
+  const showMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col h-dvh max-w-[720px] mx-auto">
-      <Header onNewChat={handleNewChat} />
-
-      <div className="flex-1 flex flex-col min-h-0">
-        {showWelcome ? (
-          <div className="flex-1 overflow-y-auto">
-            <WelcomeScreen onExampleClick={handleExampleClick} />
-          </div>
-        ) : (
-          <MessageList messages={messages} isLoading={isLoading} />
-        )}
-      </div>
-
-      {error && (
-        <ErrorBar
-          message={error}
-          onRetry={handleRetry}
-          onDismiss={() => setError(null)}
-        />
-      )}
-
-      <MessageInput
-        value={input}
-        onChange={setInput}
-        onSubmit={handleSubmit}
-        disabled={isLoading}
+    <div className="flex h-dvh max-w-[960px] mx-auto">
+      <Sidebar
+        conversations={conversations}
+        activeId={activeId}
+        isOpen={sidebarOpen}
+        onSelect={handleSelectConversation}
+        onDelete={handleDeleteConversation}
+        onNew={handleNewChat}
+        onClose={() => setSidebarOpen(false)}
       />
+
+      <div className="flex-1 flex flex-col min-w-0 border-l border-bamboo">
+        <Header
+          onNewChat={handleNewChat}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          hasSidebar={true}
+        />
+
+        <div className="flex-1 flex flex-col min-h-0">
+          {showWelcome ? (
+            <div className="flex-1 overflow-y-auto">
+              <WelcomeScreen onExampleClick={handleExampleClick} />
+            </div>
+          ) : showMessages ? (
+            <MessageList messages={messages} isLoading={isLoading} />
+          ) : null}
+        </div>
+
+        {error && (
+          <ErrorBar
+            message={error}
+            onRetry={handleRetry}
+            onDismiss={() => setError(null)}
+          />
+        )}
+
+        <MessageInput
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          disabled={isLoading}
+        />
+      </div>
     </div>
   );
 }
