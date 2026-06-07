@@ -37,6 +37,11 @@ export default function MessageBubble({
 
   return (
     <div className={`flex flex-col ${isUser ? "items-end" : "items-start"} mb-4`}>
+      {/* Timestamp above */}
+      <span className={`text-xs text-pencil/40 mb-1 px-1 ${isUser ? "text-right" : "text-left"}`}>
+        {formatTime(message.timestamp)}
+      </span>
+
       <div
         className={`max-w-[85%] px-4 py-3 rounded-lg ${
           isUser
@@ -53,30 +58,25 @@ export default function MessageBubble({
         )}
       </div>
 
-      {/* Actions below bubble — always visible */}
-      <div className={`flex items-center gap-2 mt-1 px-1 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-        <span className="text-[10px] text-pencil/30">
-          {formatTime(message.timestamp)}
-        </span>
-        {!isUser && !isStreaming && message.content && (
-          <>
+      {/* Actions below — AI messages only */}
+      {!isUser && !isStreaming && message.content && (
+        <div className="flex items-center gap-2 mt-1 px-1">
+          <button
+            onClick={handleCopy}
+            className="text-[11px] text-pencil/40 hover:text-pencil cursor-pointer"
+          >
+            {copied ? "已复制" : "复制"}
+          </button>
+          {onRegenerate && (
             <button
-              onClick={handleCopy}
+              onClick={onRegenerate}
               className="text-[11px] text-pencil/40 hover:text-pencil cursor-pointer"
             >
-              {copied ? "已复制" : "复制"}
+              重新生成
             </button>
-            {onRegenerate && (
-              <button
-                onClick={onRegenerate}
-                className="text-[11px] text-pencil/40 hover:text-pencil cursor-pointer"
-              >
-                重新生成
-              </button>
-            )}
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
